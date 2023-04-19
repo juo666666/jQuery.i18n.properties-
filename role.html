@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <div th:insert="include :: header('角色列表')"/>
+    <meta id="i18n_pagename" content="common">
+</head>
+<body class="gray-bg">
+<div class="container-div">
+    <div class="row">
+        <div class="col-sm-12 search-collapse">
+            <form id="role-form">
+                <div class="select-list">
+                    <ul>
+                        <li>
+                            <span class="i18n" name="user054"></span>：<input type="text" name="roleName" onchange="$.table.search()"/>
+                        </li>
+                        <li>
+                            <span class="i18n" name="user055"></span>：<input type="text" name="roleKey" onchange="$.table.search()"/>
+                        </li>
+                        <li>
+                            <span class="i18n" name="oa_role001"></span>：<select name="status" th:with="type=${@dict.getType('sys_normal_disable')}" onchange="$.table.search()">
+                            <option value=""><span class="i18n" name="oa_role002"></span></option>
+                            <option th:each="dict : ${type}" th:text="${dict.dictLabel}"
+                                    th:value="${dict.dictValue}"></option>
+                        </select>
+                        </li>
+                        <li class="select-time">
+                            <label class="i18n" name="user008"></label>
+                            <input type="text" class="time-input i18n-input" id="startTime" selectattr="placeholder" selectname="startDate"
+                                   name="params[beginTime]"/>
+                            <span>-</span>
+                            <input type="text" class="time-input i18n-input" id="endTime" selectattr="placeholder" selectname="endDate"
+                                   name="params[endTime]"/>
+                        </li>
+                        <li>
+                            <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i
+                                    class="fa fa-search"></i>&nbsp;<span class="i18n" name="user001"></span></a>
+                            <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i
+                                    class="fa fa-refresh"></i>&nbsp;<span class="i18n" name="user002"></span></a>
+                        </li>
+                    </ul>
+                </div>
+            </form>
+        </div>
+
+        <div class="btn-group-sm" id="toolbar" role="group">
+            <a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="system:role:add">
+                <i class="fa fa-plus"></i> <span class="i18n" name="dataBaseConfig003" />
+            </a>
+            <a class="btn btn-primary single disabled" onclick="$.operate.edit()"
+               shiro:hasPermission="system:role:edit">
+                <i class="fa fa-edit"></i> <span class="i18n" name="user010" />
+            </a>
+            <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()"
+               shiro:hasPermission="system:role:remove">
+                <i class="fa fa-remove"></i> <span class="i18n" name="dataBaseConfig005" />
+            </a>
+            <a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="system:role:export">
+                <i class="fa fa-download"></i> <span class="i18n" name="active-user006" />
+            </a>
+        </div>
+
+        <div class="col-sm-12 select-table table-striped">
+            <table id="bootstrap-table" data-locale="zh"></table>
+        </div>
+    </div>
+</div>
+<div th:insert="include :: footer"/>
+<script th:inline="javascript">
+    var editFlag = [[${@permission.hasPermi('system:role:edit')}]];
+    var removeFlag = [[${@permission.hasPermi('system:role:remove')}]];
+    var prefix = ctx + "system/role";
+
+    //获取应用路径
+    var ROOT = [[${#servletContext.contextPath}]];
+
+    var Ii8nObj = {
+        user054 : '',
+        user055 : '',
+        user008 : '',
+        element028 : '',
+        role011 : '',
+        user007 : '',
+        user009 : '',
+        user010 : '',
+        role018 : '',
+        role017 : '',
+        user016 : '',
+        dataBaseConfig005 : ''
+    }
+
+    $(function () {
+        /*执行I18n翻译*/
+        execI18n(Ii8nObj);
+
+        var options = {
+            url: prefix + "/list",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            exportUrl: prefix + "/export",
+            sortName: "roleSort",
+            modalName: "角色",
+            columns: [{
+                checkbox: true
+            },
+                {
+                    field: 'roleId',
+                    title: Ii8nObj.element028
+                },
+                {
+                    field: 'roleName',
+                    title: Ii8nObj.user054,
+                    sortable: true
+                },
+                {
+                    field: 'roleKey',
+                    title: Ii8nObj.user055,
+                    sortable: true
+                },
+                {
+                    field: 'roleSort',
+                    title: Ii8nObj.role011,
+                    sortable: true
+                },
+                {
+                    visible: editFlag == 'hidden' ? false : true,
+                    title: Ii8nObj.user007,
+                    align: 'center',
+                    formatter: function (value, row, index) {
+                        return statusTools(row);
+                    }
+                },
+                {
+                    field: 'remark',
+                    title: Ii8nObj.user016
+                },
+                {
+                    field: 'createTime',
+                    title: Ii8nObj.user008,
+                    sortable: true
+                },
+                {
+                    title: Ii8nObj.user009,
+                    align: 'center',
+                    formatter: function (value, row, index) {
+                        var actions = [];
+                        actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.roleId + '\')"><i class="fa fa-edit"></i>'+Ii8nObj.user010+'</a> ');
+                        //actions.push('<a class="btn btn-primary btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="authDataScope(\'' + row.roleId + '\')"><i class="fa fa-check-square-o"></i>数据权限</a> ');
+                        actions.push('<a class="btn btn-info btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="authDept(\'' + row.roleId + '\')"><i class="fa fa-user"></i>'+Ii8nObj.role018+'</a> ');
+                        actions.push('<a class="btn btn-info btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="authUser(\'' + row.roleId + '\')"><i class="fa fa-user"></i>'+ Ii8nObj.role017 +'</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.roleId + '\')"><i class="fa fa-remove"></i>'+Ii8nObj.dataBaseConfig005+'</a> ');
+                        return actions.join('');
+                    }
+                }]
+        };
+        $.table.init(options);
+    });
+
+    /* 角色管理-分配数据权限 */
+    function authDataScope(roleId) {
+        var url = prefix + '/authDataScope/' + roleId;
+        $.modal.open("分配数据权限", url);
+    }
+
+    function  authDept(roleId){
+        var url = prefix + '/authDept/' + roleId;
+        $.modal.open("分配部门", url);
+    }
+
+    /* 角色管理-分配用户 */
+    function authUser(roleId) {
+        var url = prefix + '/authUser/' + roleId;
+        $.modal.openTab("分配用户", url);
+    }
+
+    /* 角色状态显示 */
+    function statusTools(row) {
+        if (row.status == 1) {
+            return '<i class=\"fa fa-toggle-off text-info fa-2x\" onclick="enable(\'' + row.roleId + '\')"></i> ';
+        } else {
+            return '<i class=\"fa fa-toggle-on text-info fa-2x\" onclick="disable(\'' + row.roleId + '\')"></i> ';
+        }
+    }
+
+    /* 角色管理-停用 */
+    function disable(roleId) {
+        $.modal.confirm("确认要停用角色吗？", function () {
+            $.operate.post(prefix + "/changeStatus", {"roleId": roleId, "status": 1});
+        })
+    }
+
+    /* 角色管理启用 */
+    function enable(roleId) {
+        $.modal.confirm("确认要启用角色吗？", function () {
+            $.operate.post(prefix + "/changeStatus", {"roleId": roleId, "status": 0});
+        })
+    }
+</script>
+</body>
+</html>
